@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout — DamayaniStore</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body data-page="checkout" data-base="../">
+<div id="toast-wrap"></div>
+<div id="navbar-placeholder"></div>
+
+<div class="page-hero" style="padding-bottom:30px;">
+  <h1>Form Pengiriman</h1>
+  <p>Isi data pengiriman dengan lengkap dan benar</p>
+</div>
+
+<section class="section" style="padding-top:40px;">
+  <div style="display:grid;grid-template-columns:1fr 360px;gap:28px;align-items:start;max-width:900px;">
+
+    <!-- FORM -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:30px;">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:22px;">Detail Pengiriman</h3>
+      <form onsubmit="doCheckout(event)">
+        <div class="form-group">
+          <label>Nama Lengkap</label>
+          <input type="text" id="co-name" placeholder="Nama penerima" required />
+        </div>
+        <div class="form-group">
+          <label>Alamat Lengkap</label>
+          <textarea id="co-address" rows="3" placeholder="Jl. Contoh No.1, Kota, Provinsi" required
+            style="width:100%;padding:12px 15px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:var(--white);font-family:inherit;font-size:0.88rem;outline:none;resize:none;transition:border 0.2s;"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Nomor HP</label>
+          <input type="tel" id="co-phone" placeholder="08xxxxxxxxxx" required />
+        </div>
+        <div class="form-group">
+          <label>Metode Pembayaran</label>
+          <select id="co-payment" style="width:100%;padding:12px 15px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--white);font-size:0.88rem;outline:none;">
+            <option value="transfer">Transfer Bank</option>
+            <option value="cod">COD (Bayar di Tempat)</option>
+            <option value="ewallet">E-Wallet</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-submit" style="margin-top:8px;background:var(--success);">Konfirmasi Pesanan</button>
+      </form>
+      <div id="msg" class="auth-msg"></div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="order-summary-card">
+      <p class="os-title">Ringkasan Pesanan</p>
+      <div id="co-items"></div>
+      <hr class="os-divider">
+      <div class="os-row"><span class="label">Ongkir</span><span style="color:var(--success);">Gratis</span></div>
+      <div class="os-total"><span>Total</span><span class="val" id="co-total">Rp 0</span></div>
+    </div>
+  </div>
+</section>
+
+<div id="footer-placeholder"></div>
+<script src="../js/common.js"></script>
+<script>
+  var _user = getUser();
+  if (!_user) { window.location.href = 'login.html'; }
+  var _cart = getCart();
+  if (!_cart.length) { alert('Keranjang kosong!'); window.location.href = '../index.html'; }
+
+  var _total = cartTotal();
+  document.getElementById('co-total').textContent = fmtRp(_total);
+  document.getElementById('co-items').innerHTML = _cart.map(function(i){
+    return '<div class="os-row"><span class="label" style="font-size:0.82rem;">'+i.name+' ×'+i.quantity+'</span><span style="font-size:0.82rem;">'+fmtRp(i.price*i.quantity)+'</span></div>';
+  }).join('');
+
+  function showMsg(t,type){var el=document.getElementById('msg');el.textContent=t;el.className='auth-msg '+(type==='error'?'err':'ok');}
+
+  /* ---- Format nomor WA: hilangkan +, spasi, strip ---- */
+  var WA_OWNER = '6288808581335'; // +62 888-0858-1335
+
+  /* ---- Generate pesan WA profesional ---- */
+  function buildWAMessage(orderId, customer, items, total, payMethod) {
+    var payLabels = { transfer:'Transfer Bank', cod:'COD (Bayar di Tempat)', ewallet:'E-Wallet' };
+    var payLabel  = payLabels[payMethod] || payMethod;
+
+    // Tanggal & waktu Indonesia
+    var now   = new Date();
+    var tgl   = now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    var jam   = now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+
+    // Detail item
+    var itemLines = items.map(function(it, idx){
+      return (idx+1)+'. '+it.name+' \u00d7'+it.quantity+'\n'
+           + '   \u2514 '+fmtRp(it.price)+' \u00d7 '+it.quantity+' = *'+fmtRp(it.price*it.quantity)+'*';
+    }).join('\n');
+
+    var subtotal = items.reduce(function(s,it){return s+it.price*it.quantity;},0);
+
+    var msg = [
+      '\uD83D\uDED2 *PESANAN BARU — DamayaniStore*',
+      '━━━━━━━━━━━━━━━━━━━━',
+      '',
+      '\uD83D\uDCC5 *'+tgl+'* pukul '+jam,
+      '\uD83D\uDCCB *Order ID:* `'+orderId+'`',
+      '',
+      '\uD83D\uDC64 *DATA PENERIMA*',
+      '┌───────────────────',
+      '│ Nama     : '+customer.name,
+      '│ No. HP   : '+customer.phone,
+      '│ Alamat   : '+customer.address,
+      '│ Bayar Via: '+payLabel,
+      '└───────────────────',
+      '',
+      '\uD83D\uDCE6 *DETAIL PESANAN*',
+      itemLines,
+      '',
+      '━━━━━━━━━━━━━━━━━━━━',
+      '\uD83D\uDCB0 Subtotal : '+fmtRp(subtotal),
+      '\uD83D\uDE9A Ongkir   : *GRATIS*',
+      '\uD83D\uDCB3 *TOTAL BAYAR : '+fmtRp(total)+'*',
+      '━━━━━━━━━━━━━━━━━━━━',
+      '',
+      '_Mohon segera dikonfirmasi & diproses._',
+      '_Terima kasih sudah berbelanja di DamayaniStore! \u2728_'
+    ].join('\n');
+
+    return msg;
+  }
+
+  function doCheckout(e){
+    e.preventDefault();
+    var name  = document.getElementById('co-name').value.trim();
+    var addr  = document.getElementById('co-address').value.trim();
+    var phone = document.getElementById('co-phone').value.trim();
+    var pay   = document.getElementById('co-payment').value;
+    if(!name) { showMsg('Nama tidak boleh kosong!','error'); return; }
+    if(!addr) { showMsg('Alamat tidak boleh kosong!','error'); return; }
+    if(!phone){ showMsg('Nomor HP tidak boleh kosong!','error'); return; }
+
+    var btn = document.querySelector('.btn-submit');
+    btn.disabled = true; btn.textContent = 'Memproses...';
+
+    checkoutAPI({ name:name, address:addr, phone:phone, paymentMethod:pay }, function(err, result) {
+      btn.disabled = false; btn.textContent = 'Konfirmasi Pesanan';
+      if (err) { showMsg(err, 'error'); return; }
+
+      updateBadge();
+      showMsg('Pesanan berhasil dibuat! Mengalihkan ke WhatsApp...', 'ok');
+
+      /* ---- Kirim notif WA ke owner ---- */
+      var waMsg = buildWAMessage(
+        result.orderId,
+        { name: name, phone: phone, address: addr },
+        _cart,
+        _total,
+        pay
+      );
+      var waUrl = 'https://wa.me/' + WA_OWNER + '?text=' + encodeURIComponent(waMsg);
+
+      /* Buka WA di tab baru, lalu redirect ke halaman pesanan */
+      setTimeout(function(){
+        window.open(waUrl, '_blank');
+        setTimeout(function(){ window.location.href = 'orders.html'; }, 800);
+      }, 900);
+    });
+  }
+</script>
+</body>
+</html>

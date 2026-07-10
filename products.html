@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Produk — DamayaniStore</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body data-page="products" data-base="../">
+<div id="toast-wrap"></div>
+<div id="navbar-placeholder"></div>
+
+<div class="page-hero">
+  <nav class="breadcrumb" style="padding:0 0 16px;background:none;">
+    <a href="../index.html">Home</a>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    <span>Semua Produk</span>
+  </nav>
+  <h1>All Collection</h1>
+  <p>Temukan koleksi parfum premium dan aksesoris mewah pilihan terbaik</p>
+</div>
+
+<section class="section" style="padding-top:40px;">
+  <div class="products-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <h3>Kategori</h3>
+      <button class="sidebar-item active" data-cat="semua" onclick="setcat(this)">Semua Produk</button>
+      <button class="sidebar-item" data-cat="parfum-pria" onclick="setcat(this)">🌸 Parfum Pria</button>
+      <button class="sidebar-item" data-cat="parfum-wanita" onclick="setcat(this)">🌷 Parfum Wanita</button>
+      <button class="sidebar-item" data-cat="body-mist" onclick="setcat(this)">🧴 Body Mist</button>
+      <button class="sidebar-item" data-cat="home-fragrance" onclick="setcat(this)">🕯️ Home Fragrance</button>
+      <hr class="sidebar-divider">
+      <h3>Urutkan</h3>
+      <button class="sidebar-item active-sort" data-sort="default" onclick="setsort(this)">Default</button>
+      <button class="sidebar-item" data-sort="price-asc" onclick="setsort(this)">Harga: Terendah</button>
+      <button class="sidebar-item" data-sort="price-desc" onclick="setsort(this)">Harga: Tertinggi</button>
+      <button class="sidebar-item" data-sort="rating" onclick="setsort(this)">Rating Terbaik</button>
+    </aside>
+
+    <!-- MAIN -->
+    <div>
+      <div class="filter-bar">
+        <div style="flex:1;display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray2)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="search-inp" type="text" placeholder="Cari produk..." oninput="doFilter()"
+            style="background:none;border:none;outline:none;color:var(--white);font-size:0.85rem;width:100%;">
+        </div>
+        <span class="showing-text" id="showing-text">Menampilkan 0 produk</span>
+      </div>
+      <div class="product-grid" id="product-grid"></div>
+      <div id="no-result" style="display:none;text-align:center;padding:60px;color:var(--gray2);">
+        <p style="font-size:1rem;">Produk tidak ditemukan.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="footer-placeholder"></div>
+<script src="../js/common.js"></script>
+<script>
+  var _all = [], _cat = 'semua', _sort = 'default';
+
+  // Cek URL param ?cat=
+  (function(){
+    var p = new URLSearchParams(window.location.search);
+    if(p.get('cat')) _cat = p.get('cat');
+  })();
+
+  // Load products — API first, fallback ke JSON file
+  loadProductsFromAPI(function(err, data) {
+    if (err || !data) {
+      document.getElementById('product-grid').innerHTML='<p style="color:var(--danger);padding:20px;">Gagal memuat produk.</p>';
+      return;
+    }
+    _all = data; doFilter();
+  });
+
+  function setcat(btn){
+    document.querySelectorAll('.sidebar-item').forEach(function(b){
+      if(b.hasAttribute('data-cat')) b.classList.remove('active');
+    });
+    btn.classList.add('active');
+    _cat = btn.getAttribute('data-cat');
+    doFilter();
+  }
+
+  function setsort(btn){
+    document.querySelectorAll('[data-sort]').forEach(function(b){b.classList.remove('active-sort');});
+    btn.classList.add('active-sort');
+    _sort = btn.getAttribute('data-sort');
+    doFilter();
+  }
+
+  function doFilter(){
+    var kw = document.getElementById('search-inp').value.toLowerCase();
+    var filtered = _all.filter(function(p){
+      return (_cat==='semua'||p.category===_cat) && p.name.toLowerCase().includes(kw);
+    });
+    if(_sort==='price-asc') filtered.sort(function(a,b){return a.price-b.price;});
+    else if(_sort==='price-desc') filtered.sort(function(a,b){return b.price-a.price;});
+    else if(_sort==='rating') filtered.sort(function(a,b){return b.rating-a.rating;});
+    document.getElementById('showing-text').textContent='Menampilkan '+filtered.length+' produk';
+    renderGrid(filtered);
+  }
+
+  function renderGrid(list){
+    var grid = document.getElementById('product-grid');
+    var noRes = document.getElementById('no-result');
+    if(list.length===0){grid.innerHTML='';noRes.style.display='block';return;}
+    noRes.style.display='none';
+    grid.innerHTML=list.map(function(p){
+      var hasDisc=p.originalPrice&&p.originalPrice>p.price;
+      var badgeHtml=p.badge?'<span class="pcard-badge '+(p.badge==='NEW'?'new-badge':'')+'">'+(p.badge==='NEW'?'NEW':'BEST SELLER')+'</span>':'';
+      return '<div class="pcard">'
+        +'<div class="pcard-img">'
+        +'<img src="'+p.image+'" alt="'+p.name+'" onerror="this.src=\'https://placehold.co/400x220?text=No+Image\'">'
+        +badgeHtml
+        +'</div>'
+        +'<div class="pcard-body">'
+        +'<span class="pcard-cat">'+p.category+'</span>'
+        +'<h3 class="pcard-name">'+p.name+'</h3>'
+        +'<div class="pcard-rating"><span class="stars">★★★★★</span><span class="rating-val">'+p.rating+'</span></div>'
+        +'<div class="pcard-footer">'
+        +'<div class="pcard-price">'
+        +(hasDisc?'<span class="price-orig">'+fmtRp(p.originalPrice)+'</span>':'')
+        +'<span class="price-main'+(hasDisc?' discounted':'')+'">'+fmtRp(p.price)+'</span>'
+        +'</div>'
+        +'<button class="pcard-add" onclick="addToCart('+p.id+')">'
+        +'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>'
+        +'</button>'
+        +'</div>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+  }
+</script>
+</body>
+</html>

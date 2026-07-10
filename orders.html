@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pesanan Saya — DamayaniStore</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body data-page="orders" data-base="../">
+<div id="toast-wrap"></div>
+<div id="navbar-placeholder"></div>
+
+<div class="page-hero" style="padding-bottom:30px;">
+  <nav class="breadcrumb" style="padding:0 0 16px;background:none;">
+    <a href="../index.html">Home</a>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    <span>Pesanan Saya</span>
+  </nav>
+  <h1>Riwayat Pesanan</h1>
+  <p>Pantau semua pesanan Anda di sini</p>
+</div>
+
+<section class="section" style="padding-top:36px;max-width:800px;">
+  <div id="orders-wrap"></div>
+</section>
+
+<div id="footer-placeholder"></div>
+<script src="../js/common.js"></script>
+<script>
+  var _user = getUser();
+  if (!_user) { window.location.href = 'login.html'; }
+
+  var STATUS_MAP = {
+    pending:   {cls:'b-pending',   lbl:'Menunggu'},
+    processing:{cls:'b-processing',lbl:'Diproses'},
+    completed: {cls:'b-completed', lbl:'Selesai'},
+    cancelled: {cls:'b-cancelled', lbl:'Dibatalkan'}
+  };
+
+  function render(){
+    var wrap=document.getElementById('orders-wrap');
+    getOrdersAPI(function(err, orders) {
+      if (err) { wrap.innerHTML='<p style="color:var(--danger);">'+err+'</p>'; return; }
+      orders = (orders||[]).sort(function(a,b){return new Date(b.date||b.created_at)-new Date(a.date||a.created_at);});
+
+      if(!orders.length){
+        wrap.innerHTML='<div class="empty-state"><p>Belum ada pesanan.</p><a href="products.html" class="btn-blue">Mulai Belanja</a></div>';
+        return;
+      }
+
+      wrap.innerHTML=orders.map(function(o){
+        var s=STATUS_MAP[o.status]||STATUS_MAP.pending;
+        var isPaid=o.paymentStatus==='paid'||o.payment_status==='paid';
+        var custName=o.customer_name||(o.customer&&o.customer.name)||'-';
+        var custAddr=o.customer_address||(o.customer&&o.customer.address)||'-';
+        var custPay=o.payment_method||(o.customer&&o.customer.paymentMethod)||'-';
+        var oDate=o.created_at||o.date;
+        var items=o.items||[];
+        return '<div class="order-card">'
+          +'<div class="order-card-header">'
+          +'<div><p class="order-id">'+o.id+'</p><p class="order-date">'+fmtDate(oDate)+'</p></div>'
+          +'<div class="badge-row">'
+          +'<span class="badge '+s.cls+'">'+s.lbl+'</span>'
+          +'<span class="badge '+(isPaid?'b-paid':'b-unpaid')+'">'+(isPaid?'Lunas':'Belum Bayar')+'</span>'
+          +'</div></div>'
+          +'<p style="font-size:0.7rem;color:var(--gray2);text-transform:uppercase;margin-bottom:5px;">Produk</p>'
+          +'<p class="order-products">'+items.map(function(i){return (i.name||'?')+' ×'+(i.quantity||1);}).join(', ')+'</p>'
+          +'<div class="order-footer">'
+          +'<div class="order-delivery"><p>Ke: <strong style="color:rgba(255,255,255,0.8);">'+custName+'</strong></p><p>'+custAddr+'</p><p>Metode: '+custPay+'</p></div>'
+          +'<div style="text-align:right;"><p style="font-size:0.72rem;color:var(--gray2);">Total</p><p class="order-total">'+fmtRp(o.total)+'</p></div>'
+          +'</div>'
+          +(!isPaid?'<button class="btn-pay" onclick="bayar(\''+o.id+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Konfirmasi Pembayaran</button>':'')
+          +'</div>';
+      }).join('');
+    });
+  }
+
+  function bayar(id){
+    if(!confirm('Konfirmasi pembayaran pesanan '+id+'?'))return;
+    confirmPayAPI(id, function(err) {
+      if (err) { toast(err, 'error'); return; }
+      toast('Pembayaran dikonfirmasi!','success');
+      render();
+    });
+  }
+
+  render();
+</script>
+</body>
+</html>

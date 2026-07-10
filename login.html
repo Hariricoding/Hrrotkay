@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Login — DamayaniStore</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      font-family:'Inter',sans-serif;
+      min-height:100vh;
+      display:flex;align-items:center;justify-content:center;
+      padding:20px;
+      background:#0a0c14;
+      overflow:hidden;
+      position:relative;
+    }
+
+    /* Animated background blobs */
+    .blob{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;animation:float 8s ease-in-out infinite;}
+    .blob-1{width:500px;height:500px;background:rgba(59,130,246,0.12);top:-150px;left:-150px;animation-delay:0s;}
+    .blob-2{width:400px;height:400px;background:rgba(99,102,241,0.1);bottom:-100px;right:-100px;animation-delay:-3s;}
+    .blob-3{width:300px;height:300px;background:rgba(168,85,247,0.08);top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:-5s;}
+    @keyframes float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.05)}}
+
+    /* Card */
+    .card{
+      background:rgba(15,19,32,0.92);
+      backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:22px;
+      padding:44px 40px;
+      width:100%;max-width:420px;
+      box-shadow:0 30px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.04);
+      position:relative;z-index:1;
+      animation:slideUp 0.45s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes slideUp{from{opacity:0;transform:translateY(24px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+    /* Logo */
+    .logo-wrap{text-align:center;margin-bottom:6px;}
+    .logo{font-size:1.5rem;font-weight:800;color:white;letter-spacing:-0.5px;}
+    .logo span{color:#3b82f6;}
+    .subtitle{text-align:center;font-size:0.82rem;color:#64748b;margin-bottom:28px;}
+
+    /* Role tabs */
+    .tabs{
+      display:grid;grid-template-columns:1fr 1fr;
+      gap:6px;background:rgba(255,255,255,0.04);
+      border-radius:12px;padding:5px;
+      margin-bottom:24px;border:1px solid rgba(255,255,255,0.06);
+    }
+    .tab{
+      padding:9px;border-radius:9px;font-size:0.82rem;font-weight:600;
+      cursor:pointer;border:none;background:none;
+      color:#64748b;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px;
+      font-family:inherit;
+    }
+    .tab.active{background:rgba(59,130,246,0.2);color:#3b82f6;border:1px solid rgba(59,130,246,0.25);}
+    .tab svg{flex-shrink:0;}
+
+    /* Form */
+    .fg{margin-bottom:15px;}
+    .fg label{display:block;font-size:0.75rem;color:#94a3b8;font-weight:500;margin-bottom:6px;}
+    .input-wrap{position:relative;}
+    .fg input{
+      width:100%;padding:12px 14px 12px 42px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.09);
+      border-radius:11px;color:white;
+      font-size:0.88rem;font-family:inherit;outline:none;
+      transition:all 0.2s;
+    }
+    .fg input:focus{border-color:#3b82f6;background:rgba(59,130,246,0.06);box-shadow:0 0 0 3px rgba(59,130,246,0.12);}
+    .fg input::placeholder{color:#374151;}
+    .input-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#475569;pointer-events:none;}
+
+    /* Password toggle */
+    .pass-toggle{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;color:#475569;cursor:pointer;padding:2px;}
+    .pass-toggle:hover{color:#94a3b8;}
+
+    /* Admin hint */
+    .admin-hint{
+      display:none;
+      background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);
+      border-radius:10px;padding:11px 14px;margin-bottom:16px;
+      font-size:0.75rem;color:#c4b5fd;line-height:1.7;
+    }
+    .admin-hint strong{color:#a855f7;}
+
+    /* Button */
+    .btn{
+      width:100%;padding:13px;border:none;border-radius:12px;
+      font-family:inherit;font-size:0.95rem;font-weight:700;
+      cursor:pointer;transition:all 0.2s;margin-top:4px;
+      background:linear-gradient(135deg,#1d4ed8,#3b82f6);
+      color:white;box-shadow:0 4px 18px rgba(59,130,246,0.35);
+    }
+    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(59,130,246,0.45);}
+    .btn:active{transform:translateY(0);}
+    .btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;box-shadow:none;}
+    .btn.admin-btn{background:linear-gradient(135deg,#5b21b6,#7c3aed);box-shadow:0 4px 18px rgba(124,58,237,0.35);}
+    .btn.admin-btn:hover{box-shadow:0 6px 24px rgba(124,58,237,0.45);}
+
+    /* Message */
+    .msg{text-align:center;margin-top:12px;padding:10px 14px;border-radius:10px;font-size:0.8rem;display:none;}
+    .msg.err{background:rgba(239,68,68,0.1);color:#f87171;display:block;border:1px solid rgba(239,68,68,0.2);}
+    .msg.ok {background:rgba(34,197,94,0.1); color:#4ade80;display:block;border:1px solid rgba(34,197,94,0.2);}
+
+    /* Footer links */
+    .footer-links{text-align:center;margin-top:20px;font-size:0.8rem;color:#475569;}
+    .footer-links a{color:#3b82f6;text-decoration:none;font-weight:600;}
+    .footer-links a:hover{text-decoration:underline;}
+
+    /* Divider */
+    .divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:#374151;font-size:0.72rem;}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07);}
+
+    /* Role badge on card */
+    .role-indicator{
+      display:flex;align-items:center;justify-content:center;gap:6px;
+      padding:6px 14px;border-radius:50px;font-size:0.72rem;font-weight:600;
+      margin:0 auto 20px;width:fit-content;
+    }
+    .role-indicator.customer{background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);}
+    .role-indicator.admin{background:rgba(168,85,247,0.12);color:#a855f7;border:1px solid rgba(168,85,247,0.2);}
+    .role-dot{width:6px;height:6px;border-radius:50%;}
+    .role-indicator.customer .role-dot{background:#3b82f6;}
+    .role-indicator.admin .role-dot{background:#a855f7;}
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <div class="card">
+    <div class="logo-wrap">
+      <div class="logo">Damayani<span>Store</span></div>
+    </div>
+    <p class="subtitle">Masuk ke akun Anda</p>
+
+    <!-- ROLE TABS -->
+    <div class="tabs">
+      <button class="tab active" id="tab-customer" onclick="switchRole('customer')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Customer
+      </button>
+      <button class="tab" id="tab-admin" onclick="switchRole('admin')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Admin
+      </button>
+    </div>
+
+    <!-- Role indicator -->
+    <div class="role-indicator customer" id="role-indicator">
+      <span class="role-dot"></span>
+      <span id="role-label">Mode Customer</span>
+    </div>
+
+    <!-- Admin hint -->
+    <div class="admin-hint" id="admin-hint">
+      🔑 Akun Admin:<br>
+      Email: <strong>admin@gmail.com</strong> &nbsp;|&nbsp; Password: <strong>12345678</strong>
+    </div>
+
+    <!-- FORM -->
+    <form onsubmit="handleLogin(event)">
+      <div class="fg">
+        <label>Email</label>
+        <div class="input-wrap">
+          <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <input type="email" id="email" placeholder="contoh@email.com" required autocomplete="email"/>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <div class="input-wrap">
+          <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="pass" placeholder="Minimal 6 karakter" required autocomplete="current-password" id="pass"/>
+          <button type="button" class="pass-toggle" onclick="togglePass()" id="pass-toggle-btn">
+            <svg id="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn" id="submitBtn">
+        <span id="btn-text">Masuk</span>
+      </button>
+    </form>
+
+    <div id="msg" class="msg"></div>
+
+    <div class="divider">atau</div>
+
+    <div class="footer-links" id="footer-links">
+      Belum punya akun? <a href="register.html">Daftar sekarang</a>
+    </div>
+  </div>
+
+  <script>
+    /* ================================================
+       UNIFIED LOGIN — Auto redirect by role
+       admin   → /admin/index.html
+       customer→ /index.html
+       ================================================ */
+
+    var currentRole = 'customer';
+    var API = 'http://localhost:3000/api';
+
+    // ---- Cek sudah login ----
+    try {
+      var _u = JSON.parse(localStorage.getItem('currentUser'));
+      if (_u) {
+        if (_u.role === 'admin') window.location.href = '../admin/index.html';
+        else window.location.href = '../index.html';
+      }
+    } catch(e){}
+
+    // ---- Baca URL param ?role=admin ----
+    (function(){
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('role') === 'admin') {
+        window.addEventListener('DOMContentLoaded', function(){ switchRole('admin'); });
+      }
+    })();
+
+    // ---- Pastikan admin selalu ada di localStorage ----
+    function ensureAdmin(){
+      try {
+        var users = JSON.parse(localStorage.getItem('users')) || [];
+        if (!users.some(function(u){ return u.email === 'admin@gmail.com'; })) {
+          users.push({
+            id: 1,
+            name: 'Admin DamayaniStore',
+            email: 'admin@gmail.com',
+            password: '12345678',
+            role: 'admin',
+            createdAt: new Date().toISOString()
+          });
+          localStorage.setItem('users', JSON.stringify(users));
+        }
+      } catch(e){}
+    }
+    ensureAdmin();
+
+    // ---- Switch role tab ----
+    function switchRole(role){
+      currentRole = role;
+      var isAdmin = role === 'admin';
+
+      document.getElementById('tab-customer').className = 'tab' + (isAdmin ? '' : ' active');
+      document.getElementById('tab-admin').className    = 'tab' + (isAdmin ? ' active' : '');
+
+      var ind   = document.getElementById('role-indicator');
+      var label = document.getElementById('role-label');
+      ind.className = 'role-indicator ' + role;
+      label.textContent = isAdmin ? 'Mode Admin' : 'Mode Customer';
+
+      document.getElementById('admin-hint').style.display = isAdmin ? 'block' : 'none';
+      document.getElementById('footer-links').style.display = isAdmin ? 'none' : 'block';
+
+      var btn = document.getElementById('submitBtn');
+      btn.className = isAdmin ? 'btn admin-btn' : 'btn';
+      document.getElementById('btn-text').textContent = isAdmin ? 'Masuk ke Dashboard Admin' : 'Masuk';
+
+      // Pre-fill admin credentials
+      if (isAdmin) {
+        document.getElementById('email').value = 'admin@gmail.com';
+        document.getElementById('pass').value  = '12345678';
+      } else {
+        document.getElementById('email').value = '';
+        document.getElementById('pass').value  = '';
+      }
+
+      clearMsg();
+    }
+
+    // ---- Toggle password visibility ----
+    function togglePass(){
+      var inp = document.getElementById('pass');
+      var isText = inp.type === 'text';
+      inp.type = isText ? 'password' : 'text';
+      document.getElementById('eye-icon').innerHTML = isText
+        ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+        : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    }
+
+    // ---- Messages ----
+    function showMsg(t, type){
+      var el = document.getElementById('msg');
+      el.textContent = t;
+      el.className = 'msg ' + (type==='error' ? 'err' : 'ok');
+    }
+    function clearMsg(){
+      var el = document.getElementById('msg');
+      el.className = 'msg'; el.textContent = '';
+    }
+    function setBtn(lbl, dis){
+      document.getElementById('btn-text').textContent = lbl;
+      document.getElementById('submitBtn').disabled = dis;
+    }
+
+    // ---- Main login handler ----
+    function handleLogin(e){
+      e.preventDefault();
+      var email = document.getElementById('email').value.trim().toLowerCase();
+      var pass  = document.getElementById('pass').value;
+      if (!email || !pass){ showMsg('Email dan password wajib diisi.', 'error'); return; }
+
+      setBtn('Memverifikasi...', true);
+      clearMsg();
+
+      // Try API first (4s timeout), fallback to localStorage
+      var ctrl  = new AbortController();
+      var timer = setTimeout(function(){ ctrl.abort(); }, 4000);
+
+      fetch(API + '/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: pass }),
+        signal: ctrl.signal
+      })
+      .then(function(r){ clearTimeout(timer); return r.json(); })
+      .then(function(res){
+        if (res.success){
+          localStorage.setItem('authToken', res.data.token);
+          localStorage.setItem('currentUser', JSON.stringify(res.data.user));
+          onLoginSuccess(res.data.user);
+        } else {
+          setBtn(currentRole==='admin'?'Masuk ke Dashboard Admin':'Masuk', false);
+          showMsg(res.message || 'Email atau password salah!', 'error');
+        }
+      })
+      .catch(function(){
+        clearTimeout(timer);
+        loginLocal(email, pass);
+      });
+    }
+
+    // ---- Fallback: localStorage login ----
+    function loginLocal(email, pass){
+      try {
+        var users = JSON.parse(localStorage.getItem('users')) || [];
+        var found = users.find(function(u){
+          return u.email === email && u.password === pass;
+        });
+
+        if (!found){
+          setBtn(currentRole==='admin'?'Masuk ke Dashboard Admin':'Masuk', false);
+          showMsg('Email atau password salah!', 'error');
+          return;
+        }
+
+        // Jika tab admin tapi login dengan akun customer — tolak
+        if (currentRole === 'admin' && found.role !== 'admin'){
+          setBtn('Masuk ke Dashboard Admin', false);
+          showMsg('Akun ini bukan admin!', 'error');
+          return;
+        }
+
+        var sess = { id: found.id, name: found.name, email: found.email, role: found.role || 'customer' };
+        localStorage.setItem('currentUser', JSON.stringify(sess));
+        onLoginSuccess(sess);
+
+      } catch(e){
+        setBtn(currentRole==='admin'?'Masuk ke Dashboard Admin':'Masuk', false);
+        showMsg('Terjadi kesalahan. Coba lagi.', 'error');
+      }
+    }
+
+    // ---- Redirect berdasarkan role ----
+    function onLoginSuccess(user){
+      if (user.role === 'admin'){
+        showMsg('Selamat datang Admin, ' + user.name + '! Mengalihkan...', 'ok');
+        setTimeout(function(){ window.location.href = '../admin/index.html'; }, 800);
+      } else {
+        showMsg('Selamat datang, ' + user.name + '!', 'ok');
+        setTimeout(function(){ window.location.href = '../index.html'; }, 800);
+      }
+    }
+  </script>
+</body>
+</html>
